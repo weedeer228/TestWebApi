@@ -14,5 +14,8 @@ public class Game
     [MaxLength(50)]
     public string Developer { get; set; }
 
-    public IList<Genre> Genres { get; init; } = new List<Genre>();
+    public IList<Genre> Genres { get; set; } = new List<Genre>();
+
+    public override bool Equals(object? obj) => obj is Game game && game.Name.Equals(Name) && game.Developer.Equals(Developer);
+
 }

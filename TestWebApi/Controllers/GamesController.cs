@@ -1,4 +1,6 @@
-﻿namespace TestWebApi.Controllers;
+﻿using TestWebApi.Extensions;
+
+namespace TestWebApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -10,6 +12,8 @@ public class GamesController : Controller
     {
         _context = new GamesDbService(context);
     }
+
+    private GamesDbService GamesDbServiceContext => (GamesDbService)_context;
 
     // GET: Games
     [HttpGet("GetAll")]
@@ -26,15 +30,16 @@ public class GamesController : Controller
     [Tags("Create")]
     public async Task<IActionResult> Create([FromQuery] string name, [FromQuery] string developer, [FromQuery] string[] genres)
     {
-        if (ModelState.IsValid && !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(developer))
+        if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(developer))
         {
             var game = new Game()
             {
-                Name = name,
-                Developer = developer,
-                Genres = await ((GamesDbService)_context).GetOrCreateGenresAsync(genres),
+                Name = name.ToNormalView(),
+                Developer = developer.ToNormalView(),
+                Genres = await GamesDbServiceContext.GetOrCreateGenresAsync(genres),
             };
-            await _context.CreateAsync(game);
+            var result = await _context.CreateAsync(game);
+            if (result is null) return BadRequest($"Entity with same parameters already exist\nname: {name}\ndeveloper: {developer}");
             return Ok(game);
         }
         return BadRequest();
@@ -42,18 +47,18 @@ public class GamesController : Controller
 
     [HttpPut("Update")]
     [Tags("Update")]
-    public async Task<IActionResult> Edit([FromQuery] int id, [Bind("Id,Name,Developer")] Game game)
+    public async Task<IActionResult> Edit([FromQuery] int id, [FromQuery] string name, [FromQuery] string developer, [FromQuery] string[] genres)
     {
-        if (id != game.Id)
-            return NotFound();
-        if (ModelState.IsValid)
+        if (await _context.GetAsync(id) is null) return NotFound();
+        var newGameData = new Game()
         {
-            var editedGame = await _context.UpdateAsync(game);
-            if (editedGame is null)
-                return NotFound();
-            return RedirectToAction(nameof(Index));
-        }
-        return BadRequest(); ;
+            Name = name,
+            Developer = developer,
+            Genres = await GamesDbServiceContext.GetOrCreateGenresAsync(genres),
+        };
+        var editedGame = await _context.UpdateAsync(id, newGameData);
+        if (editedGame is null) return BadRequest($"Entity with same parameters already exist\nname: {name}\ndeveloper: {developer}");
+        return Ok(editedGame);
     }
 
     [HttpDelete("Delete")]
@@ -68,10 +73,10 @@ public class GamesController : Controller
             return Ok();
         return NotFound();
     }
-    [HttpGet]
+    [HttpGet("GameExist")]
     [Tags("Get")]
-    private bool GameExists(int id)
+    private async Task<bool> GameExists(int id)
     {
-        return _context.GetAsync(id) != null;
+        return await _context.GetAsync(id) != null;
     }
 }
