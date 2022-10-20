@@ -9,7 +9,4 @@ public class Genre
     [Required]
     [RegularExpression(@"^[A-Z]+[a-zA-Z""'\s-]*$")]
     public string Name { get; set; }
-
-    public IList<Game> Games { get; } = new List<Game>();
-
- }
+}

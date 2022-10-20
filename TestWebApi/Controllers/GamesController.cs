@@ -1,4 +1,5 @@
 ﻿using TestWebApi.Extensions;
+using TestWebApi.Models;
 
 namespace TestWebApi.Controllers;
 
@@ -45,6 +46,16 @@ public class GamesController : Controller
         return BadRequest();
     }
 
+    [HttpGet("GetById")]
+    [Tags("Get")]
+    public async Task<IActionResult> GetById([FromQuery] int id)
+    {
+        var entity = await _context.GetAsync(id);
+        if (entity is null)
+            return NotFound();
+        return Ok(entity);
+    }
+
     [HttpPut("Update")]
     [Tags("Update")]
     public async Task<IActionResult> Edit([FromQuery] int id, [FromQuery] string name, [FromQuery] string developer, [FromQuery] string[] genres)
@@ -61,6 +72,23 @@ public class GamesController : Controller
         return Ok(editedGame);
     }
 
+    [HttpPut("UpdateGenres")]
+    [Tags("Update")]
+    public async Task<IActionResult> EditGameGenres([FromQuery] int id, [FromQuery] string[] genres)
+    {
+        var gameFromDb = await _context.GetAsync(id);
+        if (gameFromDb is null) return NotFound();
+        var newGameData = new Game()
+        {
+            Name = gameFromDb.Name,
+            Developer = gameFromDb.Developer,
+            Genres = await GamesDbServiceContext.GetOrCreateGenresAsync(genres),
+        };
+        var editedGame = await _context.UpdateAsync(id, newGameData, false);
+        if (editedGame is null) return NotFound();
+        return Ok(editedGame);
+    }
+
     [HttpDelete("Delete")]
     [Tags("Delete")]
     public async Task<IActionResult> Delete([FromQuery] int id)
@@ -72,11 +100,5 @@ public class GamesController : Controller
         if (await _context.DeleteAsync(id))
             return Ok();
         return NotFound();
-    }
-    [HttpGet("GameExist")]
-    [Tags("Get")]
-    private async Task<bool> GameExists(int id)
-    {
-        return await _context.GetAsync(id) != null;
     }
 }

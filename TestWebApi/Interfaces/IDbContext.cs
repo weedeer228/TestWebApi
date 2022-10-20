@@ -8,7 +8,7 @@ public interface IDbContext<K, T> where T : class
 
     public Task<Game?> CreateAsync(T entity);
 
-    public Task<Game?> UpdateAsync(K key, T entity);
+    public Task<Game?> UpdateAsync(K key, T entity, bool isFullUpdate = false);
 
     public Task<bool> DeleteAsync(K key);
 

@@ -38,10 +38,10 @@ public class GamesDbService : IDbContext<int, Game>
 
     public async Task<IList<Game>> GetByAsync(Func<Game, bool> predicate) => await Task.Run(() => _context.Games.Include(game => game.Genres).Where(predicate).ToList());
 
-    public async Task<Game?> UpdateAsync(int id, Game entity)
+    public async Task<Game?> UpdateAsync(int id, Game entity, bool isFullChange = true)
     {
         var gameFromDb = await GetAsync(id);
-        if (gameFromDb is null || await IsGameExistAsync(entity)) return null;
+        if (gameFromDb is null || (await IsGameExistAsync(entity) && isFullChange)) return null;
         gameFromDb.Name = entity.Name;
         gameFromDb.Developer = entity.Developer;
         gameFromDb.Genres = entity.Genres;
